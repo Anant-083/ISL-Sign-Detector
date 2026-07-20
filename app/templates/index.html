@@ -2,35 +2,45 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
     <title>ISL Sign Detector</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
-    <div class="container">
-        <header>
-            <h1>ISL Sign Language Detector</h1>
-            <p class="subtitle">Real-time Indian Sign Language fingerspelling recognition</p>
+    <div class="app">
+        <header class="topbar">
+            <div class="logo-dot"></div>
+            <div>
+                <h1>ISL Detector</h1>
+                <p>Real-time fingerspelling recognition</p>
+            </div>
         </header>
 
-        <div class="main-card">
-            <div class="video-wrapper">
-                <video id="video" autoplay playsinline></video>
-                <div class="scan-overlay"></div>
+        <main>
+            <div class="camera-card">
+                <div class="video-box">
+                    <video id="video" autoplay playsinline muted></video>
+                    <div class="corner tl"></div>
+                    <div class="corner tr"></div>
+                    <div class="corner bl"></div>
+                    <div class="corner br"></div>
+                    <div id="camState" class="cam-state">Starting camera…</div>
+                </div>
             </div>
 
-            <div class="prediction-panel">
-                <span class="label">Detected Sign</span>
-                <div id="prediction" class="prediction-value">—</div>
-                <span id="status" class="status-dot idle">Waiting for camera</span>
+            <div class="result-card">
+                <span class="result-label">Detected Sign</span>
+                <div id="prediction" class="result-value">–</div>
             </div>
-        </div>
 
-        <canvas id="canvas" style="display:none;"></canvas>
+            <button id="switchBtn" class="switch-btn">Switch Camera</button>
+        </main>
 
         <footer>
-            <p>Built by Anant · Landmark-based recognition using MediaPipe + Random Forest</p>
+            <p>ISL fingerspelling · MediaPipe + Random Forest</p>
         </footer>
+
+        <canvas id="canvas" style="display:none;"></canvas>
     </div>
 
     <script>
@@ -38,27 +48,43 @@
         const canvas = document.getElementById('canvas');
         const context = canvas.getContext('2d');
         const predictionEl = document.getElementById('prediction');
-        const statusEl = document.getElementById('status');
+        const camState = document.getElementById('camState');
+        const switchBtn = document.getElementById('switchBtn');
 
-        canvas.width = 640;
-        canvas.height = 480;
+        canvas.width = 480;
+        canvas.height = 360;
 
-        navigator.mediaDevices.getUserMedia({ video: true })
-            .then(stream => {
+        let currentFacing = 'user';
+        let stream = null;
+
+        async function startCamera(facingMode) {
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+            }
+            try {
+                stream = await navigator.mediaDevices.getUserMedia({
+                    video: { facingMode: facingMode }
+                });
                 video.srcObject = stream;
-                statusEl.innerText = "Live";
-                statusEl.className = "status-dot live";
-            })
-            .catch(err => {
-                statusEl.innerText = "Camera access denied";
-                statusEl.className = "status-dot error";
-                console.error("Camera error:", err);
-            });
+                camState.style.display = 'none';
+            } catch (err) {
+                camState.innerText = "Camera access denied";
+                camState.style.display = 'block';
+                console.error(err);
+            }
+        }
+
+        switchBtn.addEventListener('click', () => {
+            currentFacing = currentFacing === 'user' ? 'environment' : 'user';
+            startCamera(currentFacing);
+        });
+
+        startCamera(currentFacing);
 
         function sendFrame() {
-            if (video.readyState !== 4) return;
-            context.drawImage(video, 0, 0, 640, 480);
-            const imageData = canvas.toDataURL('image/jpeg', 0.7);
+            if (!video.videoWidth) return;
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+            const imageData = canvas.toDataURL('image/jpeg', 0.6);
 
             fetch('/predict', {
                 method: 'POST',
@@ -67,12 +93,12 @@
             })
             .then(res => res.json())
             .then(data => {
-                predictionEl.innerText = data.prediction || "—";
+                predictionEl.innerText = data.prediction || "–";
             })
             .catch(() => {});
         }
 
-        setInterval(sendFrame, 1200);
+        setInterval(sendFrame, 1000);
     </script>
 </body>
 </html>
