@@ -1,28 +1,64 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ISL Sign Detector</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
-    <h1>ISL Sign Language Detector</h1>
-    <video id="video" autoplay playsinline width="640" height="480"></video>
-    <canvas id="canvas" width="640" height="480" style="display:none;"></canvas>
-    <h2 id="prediction">Prediction: --</h2>
+    <div class="container">
+        <header>
+            <h1>ISL Sign Language Detector</h1>
+            <p class="subtitle">Real-time Indian Sign Language fingerspelling recognition</p>
+        </header>
+
+        <div class="main-card">
+            <div class="video-wrapper">
+                <video id="video" autoplay playsinline></video>
+                <div class="scan-overlay"></div>
+            </div>
+
+            <div class="prediction-panel">
+                <span class="label">Detected Sign</span>
+                <div id="prediction" class="prediction-value">—</div>
+                <span id="status" class="status-dot idle">Waiting for camera</span>
+            </div>
+        </div>
+
+        <canvas id="canvas" style="display:none;"></canvas>
+
+        <footer>
+            <p>Built by Anant · Landmark-based recognition using MediaPipe + Random Forest</p>
+        </footer>
+    </div>
 
     <script>
         const video = document.getElementById('video');
         const canvas = document.getElementById('canvas');
         const context = canvas.getContext('2d');
         const predictionEl = document.getElementById('prediction');
+        const statusEl = document.getElementById('status');
+
+        canvas.width = 640;
+        canvas.height = 480;
 
         navigator.mediaDevices.getUserMedia({ video: true })
-            .then(stream => { video.srcObject = stream; })
-            .catch(err => { console.error("Camera error:", err); });
+            .then(stream => {
+                video.srcObject = stream;
+                statusEl.innerText = "Live";
+                statusEl.className = "status-dot live";
+            })
+            .catch(err => {
+                statusEl.innerText = "Camera access denied";
+                statusEl.className = "status-dot error";
+                console.error("Camera error:", err);
+            });
 
         function sendFrame() {
+            if (video.readyState !== 4) return;
             context.drawImage(video, 0, 0, 640, 480);
-            const imageData = canvas.toDataURL('image/jpeg');
+            const imageData = canvas.toDataURL('image/jpeg', 0.7);
 
             fetch('/predict', {
                 method: 'POST',
@@ -31,11 +67,12 @@
             })
             .then(res => res.json())
             .then(data => {
-                predictionEl.innerText = "Prediction: " + (data.prediction || "--");
-            });
+                predictionEl.innerText = data.prediction || "—";
+            })
+            .catch(() => {});
         }
 
-        setInterval(sendFrame, 1000);
+        setInterval(sendFrame, 1200);
     </script>
 </body>
 </html>
