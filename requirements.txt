@@ -1,7 +1,3 @@
-flask
-opencv-python-headless
-mediapipe==0.10.14
-numpy
-scikit-learn
-gunicorn
-python-dotenv
+flask==3.0.3
+scikit-learn==1.6.1
+gunicorn==21.2.0
