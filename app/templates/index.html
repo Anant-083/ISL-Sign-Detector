@@ -30,13 +30,23 @@
             </div>
 
             <div class="result-card">
-                <span class="result-label">Detected Sign</span>
+                <span class="result-label">Current Letter</span>
                 <div id="prediction" class="result-value">–</div>
+            </div>
+
+            <div class="sentence-card">
+                <span class="result-label">Sentence</span>
+                <div id="sentence" class="sentence-value">&nbsp;</div>
+                <div class="btn-row">
+                    <button id="spaceBtn" class="ctrl-btn">Add Space</button>
+                    <button id="backspaceBtn" class="ctrl-btn">Backspace</button>
+                    <button id="clearBtn" class="ctrl-btn danger">Clear</button>
+                </div>
             </div>
         </main>
 
         <footer>
-            <p>ISL fingerspelling · MediaPipe + Random Forest</p>
+            <p>ISL fingerspelling · MediaPipe (browser) + Random Forest</p>
         </footer>
     </div>
 
@@ -47,11 +57,42 @@
         const overlay = document.getElementById('overlay');
         const ctx = overlay.getContext('2d');
         const predictionEl = document.getElementById('prediction');
+        const sentenceEl = document.getElementById('sentence');
         const camState = document.getElementById('camState');
 
         let handLandmarker;
         let lastSendTime = 0;
-        const SEND_INTERVAL = 600; // ms between backend calls
+        const SEND_INTERVAL = 500;
+
+        // --- Smoothing / word-building state ---
+        let history = [];
+        const HISTORY_SIZE = 8;
+        const MAJORITY_RATIO = 0.6;
+        let lastConfirmed = null;
+        let sentence = "";
+        let noHandFrames = 0;
+
+        function updateSentenceDisplay() {
+            sentenceEl.textContent = sentence.length ? sentence : "\u00A0";
+        }
+
+        function confirmLetter(label) {
+            history.push(label);
+            if (history.length > HISTORY_SIZE) history.shift();
+            if (history.length < HISTORY_SIZE) return;
+
+            const counts = {};
+            for (const h of history) counts[h] = (counts[h] || 0) + 1;
+            let best = null, bestCount = 0;
+            for (const k in counts) {
+                if (counts[k] > bestCount) { best = k; bestCount = counts[k]; }
+            }
+            if (bestCount / HISTORY_SIZE >= MAJORITY_RATIO && best !== lastConfirmed) {
+                lastConfirmed = best;
+                sentence += best;
+                updateSentenceDisplay();
+            }
+        }
 
         async function init() {
             const vision = await FilesetResolver.forVisionTasks(
@@ -86,9 +127,9 @@
                 ctx.clearRect(0, 0, overlay.width, overlay.height);
 
                 if (result.landmarks && result.landmarks.length > 0) {
+                    noHandFrames = 0;
                     const landmarks = result.landmarks[0];
 
-                    // draw dots for visual feedback
                     ctx.fillStyle = "#2cb67d";
                     for (const lm of landmarks) {
                         ctx.beginPath();
@@ -100,13 +141,17 @@
                     if (now - lastSendTime > SEND_INTERVAL) {
                         lastSendTime = now;
                         const coords = [];
-                        for (const lm of landmarks) {
-                            coords.push(lm.x, lm.y, lm.z);
-                        }
+                        for (const lm of landmarks) coords.push(lm.x, lm.y, lm.z);
                         sendLandmarks(coords);
                     }
                 } else {
                     predictionEl.innerText = "–";
+                    noHandFrames++;
+                    // if hand missing for a while, treat as a natural pause between letters
+                    if (noHandFrames === 20) {
+                        history = [];
+                        lastConfirmed = null;
+                    }
                 }
             }
             requestAnimationFrame(predictLoop);
@@ -120,10 +165,25 @@
             })
             .then(res => res.json())
             .then(data => {
-                predictionEl.innerText = data.prediction || "–";
+                const label = data.prediction || "";
+                predictionEl.innerText = label || "–";
+                if (label) confirmLetter(label);
             })
             .catch(() => {});
         }
+
+        document.getElementById('spaceBtn').addEventListener('click', () => {
+            sentence += " ";
+            updateSentenceDisplay();
+        });
+        document.getElementById('backspaceBtn').addEventListener('click', () => {
+            sentence = sentence.slice(0, -1);
+            updateSentenceDisplay();
+        });
+        document.getElementById('clearBtn').addEventListener('click', () => {
+            sentence = "";
+            updateSentenceDisplay();
+        });
 
         init();
     </script>
