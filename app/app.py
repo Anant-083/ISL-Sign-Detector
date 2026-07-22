@@ -1,36 +1,27 @@
-import gradio as gr
-import mediapipe as mp
+from flask import Flask, render_template, request, jsonify
 import pickle
-import spaces
+import os
 
-with open('isl_model.pkl', 'rb') as f:
+app = Flask(__name__)
+
+with open('../models/isl_model.pkl', 'rb') as f:
     model = pickle.load(f)
-with open('label_encoder.pkl', 'rb') as f:
+with open('../models/label_encoder.pkl', 'rb') as f:
     le = pickle.load(f)
 
-mp_hands = mp.solutions.hands
-hands = mp_hands.Hands(static_image_mode=True, max_num_hands=1, min_detection_confidence=0.5)
+@app.route('/')
+def index():
+    return render_template('index.html')
 
-@spaces.GPU
-def predict(frame):
-    if frame is None:
-        return "No image received"
-    result = hands.process(frame)
-    if result.multi_hand_landmarks:
-        hand_landmarks = result.multi_hand_landmarks[0]
-        coords = []
-        for lm in hand_landmarks.landmark:
-            coords.extend([lm.x, lm.y, lm.z])
-        pred = model.predict([coords])[0]
-        conf = max(model.predict_proba([coords])[0])
-        label = le.inverse_transform([pred])[0]
-        return f"{label}  ({round(conf*100)}% confidence)"
-    return "No hand detected — reposition and try again"
+@app.route('/predict', methods=['POST'])
+def predict():
+    coords = request.json['landmarks']
+    pred = model.predict([coords])[0]
+    label = le.inverse_transform([pred])[0]
+    proba = model.predict_proba([coords])[0]
+    confidence = float(max(proba))
+    return jsonify({'prediction': label, 'confidence': confidence})
 
-demo = gr.Interface(
-    fn=predict,
-    inputs=gr.Image(sources=["webcam"], type="numpy"),
-    outputs=gr.Textbox(label="Detected Sign"),
-    title="ISL Sign Detector"
-)
-demo.launch()
+if __name__ == '__main__':
+    port = int(os.environ.get('PORT', 5000))
+    app.run(host='0.0.0.0', port=port)
