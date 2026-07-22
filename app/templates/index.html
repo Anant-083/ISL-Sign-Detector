@@ -10,44 +10,32 @@
     <div class="app">
         <header class="topbar">
             <div class="logo-dot"></div>
-            <div>
-                <h1>ISL Detector</h1>
-                <p>Real-time fingerspelling recognition</p>
-            </div>
+            <div><h1>ISL Detector</h1><p>Real-time fingerspelling recognition</p></div>
         </header>
-
         <main>
             <div class="camera-card">
                 <div class="video-box">
                     <video id="video" autoplay playsinline muted></video>
                     <canvas id="overlay"></canvas>
-                    <div class="corner tl"></div>
-                    <div class="corner tr"></div>
-                    <div class="corner bl"></div>
-                    <div class="corner br"></div>
-                    <div id="camState" class="cam-state" style="display:none;">Camera access denied</div>
+                    <div id="camState" class="cam-state" style="display:none;">Camera access denied — check browser/site permissions</div>
                 </div>
             </div>
-
             <div class="result-card">
                 <span class="result-label">Current Letter</span>
                 <div id="prediction" class="result-value">–</div>
+                <div id="confidence" class="confidence-value"></div>
             </div>
-
             <div class="sentence-card">
                 <span class="result-label">Sentence</span>
                 <div id="sentence" class="sentence-value">&nbsp;</div>
                 <div class="btn-row">
-                    <button id="spaceBtn" class="ctrl-btn">Add Space</button>
+                    <button id="spaceBtn" class="ctrl-btn">Space</button>
                     <button id="backspaceBtn" class="ctrl-btn">Backspace</button>
                     <button id="clearBtn" class="ctrl-btn danger">Clear</button>
                 </div>
             </div>
         </main>
-
-        <footer>
-            <p>ISL fingerspelling · MediaPipe (browser) + Random Forest</p>
-        </footer>
+        <footer><p>ISL fingerspelling · MediaPipe (browser) + Random Forest</p></footer>
     </div>
 
     <script type="module">
@@ -57,14 +45,15 @@
         const overlay = document.getElementById('overlay');
         const ctx = overlay.getContext('2d');
         const predictionEl = document.getElementById('prediction');
+        const confidenceEl = document.getElementById('confidence');
         const sentenceEl = document.getElementById('sentence');
         const camState = document.getElementById('camState');
 
         let handLandmarker;
         let lastSendTime = 0;
         const SEND_INTERVAL = 500;
+        const CONFIDENCE_THRESHOLD = 0.5;
 
-        // --- Smoothing / word-building state ---
         let history = [];
         const HISTORY_SIZE = 8;
         const MAJORITY_RATIO = 0.6;
@@ -80,13 +69,10 @@
             history.push(label);
             if (history.length > HISTORY_SIZE) history.shift();
             if (history.length < HISTORY_SIZE) return;
-
             const counts = {};
             for (const h of history) counts[h] = (counts[h] || 0) + 1;
             let best = null, bestCount = 0;
-            for (const k in counts) {
-                if (counts[k] > bestCount) { best = k; bestCount = counts[k]; }
-            }
+            for (const k in counts) if (counts[k] > bestCount) { best = k; bestCount = counts[k]; }
             if (bestCount / HISTORY_SIZE >= MAJORITY_RATIO && best !== lastConfirmed) {
                 lastConfirmed = best;
                 sentence += best;
@@ -99,26 +85,25 @@
                 "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm"
             );
             handLandmarker = await HandLandmarker.createFromOptions(vision, {
-                baseOptions: {
-                    modelAssetPath: "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task"
-                },
+                baseOptions: { modelAssetPath: "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task" },
                 runningMode: "VIDEO",
                 numHands: 1
             });
 
-            navigator.mediaDevices.getUserMedia({ video: true })
-                .then(stream => {
-                    video.srcObject = stream;
-                    video.addEventListener('loadeddata', () => {
-                        overlay.width = video.videoWidth;
-                        overlay.height = video.videoHeight;
-                        predictLoop();
-                    });
-                })
-                .catch(err => {
-                    camState.style.display = 'flex';
-                    console.error(err);
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    video: { facingMode: "user" }
                 });
+                video.srcObject = stream;
+                video.addEventListener('loadeddata', () => {
+                    overlay.width = video.videoWidth;
+                    overlay.height = video.videoHeight;
+                    predictLoop();
+                });
+            } catch (err) {
+                camState.style.display = 'flex';
+                console.error(err);
+            }
         }
 
         function predictLoop() {
@@ -129,14 +114,12 @@
                 if (result.landmarks && result.landmarks.length > 0) {
                     noHandFrames = 0;
                     const landmarks = result.landmarks[0];
-
                     ctx.fillStyle = "#2cb67d";
                     for (const lm of landmarks) {
                         ctx.beginPath();
                         ctx.arc(lm.x * overlay.width, lm.y * overlay.height, 3, 0, 2 * Math.PI);
                         ctx.fill();
                     }
-
                     const now = performance.now();
                     if (now - lastSendTime > SEND_INTERVAL) {
                         lastSendTime = now;
@@ -146,12 +129,9 @@
                     }
                 } else {
                     predictionEl.innerText = "–";
+                    confidenceEl.innerText = "";
                     noHandFrames++;
-                    // if hand missing for a while, treat as a natural pause between letters
-                    if (noHandFrames === 20) {
-                        history = [];
-                        lastConfirmed = null;
-                    }
+                    if (noHandFrames === 20) { history = []; lastConfirmed = null; }
                 }
             }
             requestAnimationFrame(predictLoop);
@@ -166,26 +146,19 @@
             .then(res => res.json())
             .then(data => {
                 const label = data.prediction || "";
+                const conf = data.confidence || 0;
                 predictionEl.innerText = label || "–";
-                if (label) confirmLetter(label);
+                confidenceEl.innerText = label ? `${Math.round(conf * 100)}% confidence` : "";
+                if (label && conf >= CONFIDENCE_THRESHOLD) confirmLetter(label);
             })
             .catch(() => {});
         }
 
-        document.getElementById('spaceBtn').addEventListener('click', () => {
-            sentence += " ";
-            updateSentenceDisplay();
-        });
-        document.getElementById('backspaceBtn').addEventListener('click', () => {
-            sentence = sentence.slice(0, -1);
-            updateSentenceDisplay();
-        });
-        document.getElementById('clearBtn').addEventListener('click', () => {
-            sentence = "";
-            updateSentenceDisplay();
-        });
+        document.getElementById('spaceBtn').addEventListener('click', () => { sentence += " "; updateSentenceDisplay(); });
+        document.getElementById('backspaceBtn').addEventListener('click', () => { sentence = sentence.slice(0, -1); updateSentenceDisplay(); });
+        document.getElementById('clearBtn').addEventListener('click', () => { sentence = ""; updateSentenceDisplay(); });
 
         init();
     </script>
 </body>
-</html>
+        </html>
