@@ -4,6 +4,7 @@
 const LABELS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
 
 let W = null;
+let SCALER = null;
 
 function matVecAdd(input, kernel, bias) {
   const outDim = bias.length;
@@ -36,13 +37,23 @@ function softmax(v) {
   return ex.map((x) => x / s);
 }
 
-async function loadModel(url = "weights.json") {
-  const res = await fetch(url);
+async function loadModel(url = "weights.json", scalerUrl = "scaler.json") {
+  const [res, scalerRes] = await Promise.all([fetch(url), fetch(scalerUrl)]);
   W = await res.json();
+  SCALER = await scalerRes.json();
+}
+
+function scaleInput(input126) {
+  const out = new Float32Array(126);
+  for (let i = 0; i < 126; i++) {
+    out[i] = (input126[i] - SCALER.mean[i]) / SCALER.scale[i];
+  }
+  return out;
 }
 
 function predict(input126) {
-  let x = matVecAdd(input126, W.dense_kernel, W.dense_bias);
+  const scaled = scaleInput(input126);
+  let x = matVecAdd(scaled, W.dense_kernel, W.dense_bias);
   x = batchNorm(x, W.bn1_gamma, W.bn1_beta, W.bn1_mean, W.bn1_var, 0.001);
   x = relu(x);
   x = matVecAdd(x, W.dense1_kernel, W.dense1_bias);
