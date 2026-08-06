@@ -104,7 +104,7 @@ async function startCamera() {
     await Model.loadModel("weights.json");
 
     hands = new Hands({ locateFile: (f) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${f}` });
-    hands.setOptions({ maxNumHands: 2, modelComplexity: 1, minDetectionConfidence: 0.6, minTrackingConfidence: 0.6 });
+    hands.setOptions({ maxNumHands: 2, modelComplexity: 1, minDetectionConfidence: 0.6, minTrackingConfidence: 0.6, selfieMode: true });
     hands.onResults(onResults);
 
     camera = new Camera(videoEl, {
