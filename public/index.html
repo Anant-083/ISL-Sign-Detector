@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ISL Alphabet Recognizer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="wrap">
+  <p class="eyebrow">isl@007 &middot; live inference</p>
+  <h1>ISL Alphabet Recognizer</h1>
+  <p class="sub">Runs your trained model (126&rarr;256&rarr;128&rarr;64&rarr;26) entirely in the browser. MediaPipe extracts hand landmarks; your exported weights do the rest. No server, no upload.</p>
+
+  <div class="stage">
+    <div class="panel">
+      <div class="cam-box" id="camBox">
+        <video id="video" autoplay playsinline muted></video>
+        <canvas id="overlay"></canvas>
+        <div class="badge"><span class="dot" id="liveDot"></span><span id="badgeText">camera off</span></div>
+      </div>
+      <div class="controls">
+        <button id="startBtn">Start camera</button>
+        <button id="stopBtn" class="secondary" disabled>Stop</button>
+      </div>
+      <div class="status" id="statusText">Click "Start camera" and allow access. Show one or two hands, palm toward the camera.</div>
+    </div>
+
+    <div class="panel letter-card">
+      <div class="letter-label">predicted sign</div>
+      <div class="letter-big" id="bigLetter">&mdash;</div>
+      <div class="conf" id="confText">confidence &mdash;</div>
+      <div class="bars" id="bars"></div>
+    </div>
+  </div>
+
+  <div class="foot-note">
+    <b>Preprocessing assumptions</b> &mdash; left hand then right hand, zero-padded if absent, classes A&ndash;Z alphabetical. Edit <code>js/app.js</code> and <code>js/model.js</code> if your training pipeline differs.
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
+<script src="js/model.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
