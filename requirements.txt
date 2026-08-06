@@ -1,6 +1,0 @@
-gradio
-mediapipe==0.10.14
-opencv-python-headless
-numpy
-scikit-learn==1.6.1
-spaces
