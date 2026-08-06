@@ -1,1 +1,0 @@
-python3 scripts/export_weights.py model/isl_model.h5 public/weights.json
