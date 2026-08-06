@@ -1,0 +1,7 @@
+services:
+  - type: web
+    name: isl-sign-detector
+    runtime: python
+    startCommand: python3 server.py
+    plan: free
+    autoDeploy: true
