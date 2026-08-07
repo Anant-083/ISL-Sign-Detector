@@ -80,21 +80,26 @@ function onResults(results) {
 
   const feat = landmarksToFeatures(results);
   if (feat) {
-    const probs = Model.predict(feat);
-    smoothed = smoothed ? smoothed.map((v, i) => v * (1 - SMOOTH) + probs[i] * SMOOTH) : probs;
-    let best = 0, bi = 0;
-    smoothed.forEach((p, i) => { if (p > best) { best = p; bi = i; } });
-    bigLetter.textContent = Model.LABELS[bi];
-    confText.textContent = `confidence ${(best * 100).toFixed(1)}%`;
-    renderBars(smoothed);
-    statusText.textContent = "Hand detected — reading landmarks live.";
-  } else {
-    bigLetter.textContent = "—";
-    confText.textContent = "no hand in frame";
-    barsEl.innerHTML = "";
-    smoothed = null;
-    statusText.textContent = "Show one or two hands, palm toward the camera.";
+  const probs = Model.predict(feat);
+  smoothed = smoothed ? smoothed.map((v, i) => v * (1 - 0.3) + probs[i] * 0.3) : probs;
+  let best = 0, bi = 0;
+  smoothed.forEach((p, i) => { if (p > best) { best = p; bi = i; } });
+
+  // dwell-time lock: require 6 frames + 55% confidence before switching
+  if (best >= 0.55) {
+    if (!lockedIdx || lockedIdx === bi) { dwell = 0; lockedIdx = bi; }
+    else if (++dwell >= 6) { lockedIdx = bi; dwell = 0; }
   }
+  bigLetter.textContent = lockedIdx ? Model.LABELS[lockedIdx] : "—";
+  confText.textContent = lockedIdx ? `confidence ${(best*100).toFixed(1)}%` : "hold steady…";
+  renderBars(smoothed);
+} else {
+  lockedIdx = null; dwell = 0; smoothed = null;
+  bigLetter.textContent = "—";
+  confText.textContent = "no hand in frame";
+  barsEl.innerHTML = "";
+}
+
 }
 
 async function startCamera() {
@@ -104,7 +109,7 @@ async function startCamera() {
     await Model.loadModel("weights.json");
 
     hands = new Hands({ locateFile: (f) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${f}` });
-hands.setOptions({ maxNumHands: 2, modelComplexity: 1, minDetectionConfidence: 0.6, minTrackingConfidence: 0.6, selfieMode: false });
+hands.setOptions({ maxNumHands: 2, modelComplexity: 1, minDetectionConfidence: 0.6, minTrackingConfidence: 0.6, selfieMode: true });
     hands.onResults(onResults);
 
     camera = new Camera(videoEl, {
