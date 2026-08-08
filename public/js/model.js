@@ -1,7 +1,9 @@
 // Forward pass for the exported Keras MLP, using weights.json.
 // Loaded as a global `Model` object; app.js calls Model.load() then Model.predict().
 
-const LABELS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
+// Order must exactly match the sorted class order used in scripts/train_model.py
+// (ASCII sort of folder names: '0'-'9' then 'A'-'Z').
+const LABELS = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
 
 let W = null;
 let SCALER = null;
