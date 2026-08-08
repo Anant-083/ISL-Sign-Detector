@@ -15,8 +15,9 @@ const stopBtn = document.getElementById("stopBtn");
 let camera = null;
 let hands = null;
 let smoothed = null;
+let lockedIdx = null;
+let dwell = 0;
 const SMOOTH = 0.35;
-
 function resizeCanvas() {
   canvasEl.width = videoEl.videoWidth || canvasEl.clientWidth;
   canvasEl.height = videoEl.videoHeight || canvasEl.clientHeight;
@@ -114,7 +115,7 @@ hands.setOptions({ maxNumHands: 2, modelComplexity: 1, minDetectionConfidence: 0
 
     camera = new Camera(videoEl, {
       onFrame: async () => { await hands.send({ image: videoEl }); },
-      width: 640, height: 480,
+      width: 1280, height: 720,
     });
     await camera.start();
 
