@@ -10,22 +10,22 @@ import json
 import h5py
 
 LAYER_MAP = {
-    "dense_kernel": "model_weights/dense/sequential/dense/kernel",
-    "dense_bias": "model_weights/dense/sequential/dense/bias",
-    "bn1_gamma": "model_weights/batch_normalization/sequential/batch_normalization/gamma",
-    "bn1_beta": "model_weights/batch_normalization/sequential/batch_normalization/beta",
-    "bn1_mean": "model_weights/batch_normalization/sequential/batch_normalization/moving_mean",
-    "bn1_var": "model_weights/batch_normalization/sequential/batch_normalization/moving_variance",
-    "dense1_kernel": "model_weights/dense_1/sequential/dense_1/kernel",
-    "dense1_bias": "model_weights/dense_1/sequential/dense_1/bias",
-    "bn2_gamma": "model_weights/batch_normalization_1/sequential/batch_normalization_1/gamma",
-    "bn2_beta": "model_weights/batch_normalization_1/sequential/batch_normalization_1/beta",
-    "bn2_mean": "model_weights/batch_normalization_1/sequential/batch_normalization_1/moving_mean",
-    "bn2_var": "model_weights/batch_normalization_1/sequential/batch_normalization_1/moving_variance",
-    "dense2_kernel": "model_weights/dense_2/sequential/dense_2/kernel",
-    "dense2_bias": "model_weights/dense_2/sequential/dense_2/bias",
-    "dense3_kernel": "model_weights/dense_3/sequential/dense_3/kernel",
-    "dense3_bias": "model_weights/dense_3/sequential/dense_3/bias",
+    "dense_kernel": "model_weights/dense/dense/kernel:0",
+    "dense_bias": "model_weights/dense/dense/bias:0",
+    "bn1_gamma": "model_weights/batch_normalization/batch_normalization/gamma:0",
+    "bn1_beta": "model_weights/batch_normalization/batch_normalization/beta:0",
+    "bn1_mean": "model_weights/batch_normalization/batch_normalization/moving_mean:0",
+    "bn1_var": "model_weights/batch_normalization/batch_normalization/moving_variance:0",
+    "dense1_kernel": "model_weights/dense_1/dense_1/kernel:0",
+    "dense1_bias": "model_weights/dense_1/dense_1/bias:0",
+    "bn2_gamma": "model_weights/batch_normalization_1/batch_normalization_1/gamma:0",
+    "bn2_beta": "model_weights/batch_normalization_1/batch_normalization_1/beta:0",
+    "bn2_mean": "model_weights/batch_normalization_1/batch_normalization_1/moving_mean:0",
+    "bn2_var": "model_weights/batch_normalization_1/batch_normalization_1/moving_variance:0",
+    "dense2_kernel": "model_weights/dense_2/dense_2/kernel:0",
+    "dense2_bias": "model_weights/dense_2/dense_2/bias:0",
+    "dense3_kernel": "model_weights/dense_3/dense_3/kernel:0",
+    "dense3_bias": "model_weights/dense_3/dense_3/bias:0",
 }
 
 def main():
