@@ -43,6 +43,18 @@ def find_class_dirs(root: Path, max_depth: int = 4):
     return by_label
 
 
+def normalize_hand(lm):
+    """Translate to wrist-relative coords, scale so the farthest landmark
+    from the wrist is at distance 1. MUST exactly match normalizeHand() in
+    public/js/app.js -- this is what makes the model invariant to hand
+    position/size in frame instead of memorizing absolute pixel coordinates."""
+    wrist = lm[0]
+    translated = [(pt.x - wrist.x, pt.y - wrist.y, pt.z - wrist.z) for pt in lm]
+    max_dist = max((x * x + y * y + z * z) ** 0.5 for x, y, z in translated)
+    scale = max_dist if max_dist > 1e-6 else 1e-6
+    return [(x / scale, y / scale, z / scale) for x, y, z in translated]
+
+
 def landmarks_to_features(hand_landmarks_list, handedness_list):
     feat = [0.0] * 126
     slots = {"Left": None, "Right": None}
@@ -53,10 +65,11 @@ def landmarks_to_features(hand_landmarks_list, handedness_list):
     def fill(lm, offset):
         if lm is None:
             return
-        for i, pt in enumerate(lm):
-            feat[offset + i * 3 + 0] = pt.x
-            feat[offset + i * 3 + 1] = pt.y
-            feat[offset + i * 3 + 2] = pt.z
+        norm = normalize_hand(lm)
+        for i, (x, y, z) in enumerate(norm):
+            feat[offset + i * 3 + 0] = x
+            feat[offset + i * 3 + 1] = y
+            feat[offset + i * 3 + 2] = z
 
     fill(slots["Left"], 0)
     fill(slots["Right"], 63)
