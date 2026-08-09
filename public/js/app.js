@@ -24,6 +24,28 @@ function resizeCanvas() {
   canvasEl.height = videoEl.videoHeight || canvasEl.clientHeight;
 }
 
+// Normalize a single hand's 21 landmarks: translate so the wrist (landmark 0)
+// is the origin, then scale so the farthest landmark from the wrist is at
+// distance 1. This makes features invariant to where the hand sits in frame
+// and how close it is to the camera -- MUST exactly match the normalization
+// used in scripts/extract_landmarks.py, or live predictions won't match
+// what the model was trained on.
+function normalizeHand(lm) {
+  const wrist = lm[0];
+  const translated = lm.map((p) => ({
+    x: p.x - wrist.x,
+    y: p.y - wrist.y,
+    z: p.z - wrist.z,
+  }));
+  let maxDist = 0;
+  for (const p of translated) {
+    const d = Math.sqrt(p.x * p.x + p.y * p.y + p.z * p.z);
+    if (d > maxDist) maxDist = d;
+  }
+  const scale = maxDist > 1e-6 ? maxDist : 1e-6;
+  return translated.map((p) => ({ x: p.x / scale, y: p.y / scale, z: p.z / scale }));
+}
+
 // Assumption: left hand -> features[0:63], right hand -> features[63:126].
 // Change here if your training script used a different convention.
 function landmarksToFeatures(results) {
@@ -43,10 +65,11 @@ function landmarksToFeatures(results) {
 
   function fill(lm, offset) {
     if (!lm) return;
+    const norm = normalizeHand(lm);
     for (let i = 0; i < 21; i++) {
-      feat[offset + i * 3 + 0] = lm[i].x;
-      feat[offset + i * 3 + 1] = lm[i].y;
-      feat[offset + i * 3 + 2] = lm[i].z;
+      feat[offset + i * 3 + 0] = norm[i].x;
+      feat[offset + i * 3 + 1] = norm[i].y;
+      feat[offset + i * 3 + 2] = norm[i].z;
     }
   }
   fill(slots.Left, 0);
