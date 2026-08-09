@@ -17,6 +17,7 @@ let hands = null;
 let smoothed = null;
 let lockedIdx = null;
 let dwell = 0;
+let smoothedLandmarks = [];
 const SMOOTH = 0.35;
 function resizeCanvas() {
   canvasEl.width = videoEl.videoWidth || canvasEl.clientWidth;
@@ -71,12 +72,24 @@ function onResults(results) {
   ctx.save();
   ctx.clearRect(0, 0, canvasEl.width, canvasEl.height);
 
-  if (results.multiHandLandmarks) {
-    for (const lm of results.multiHandLandmarks) {
-      if (window.drawConnectors) drawConnectors(ctx, lm, HAND_CONNECTIONS, { color: "#f2a72e", lineWidth: 2 });
-      if (window.drawLandmarks) drawLandmarks(ctx, lm, { color: "#2f9e94", lineWidth: 1, radius: 2.5 });
+ if (results.multiHandLandmarks) {
+  results.multiHandLandmarks.forEach((lm, handIdx) => {
+    if (!smoothedLandmarks[handIdx]) {
+      smoothedLandmarks[handIdx] = lm.map(p => ({ ...p }));
+    } else {
+      smoothedLandmarks[handIdx] = smoothedLandmarks[handIdx].map((p, i) => ({
+        x: p.x * 0.6 + lm[i].x * 0.4,
+        y: p.y * 0.6 + lm[i].y * 0.4,
+        z: p.z * 0.6 + lm[i].z * 0.4,
+      }));
     }
-  }
+    const drawLm = smoothedLandmarks[handIdx];
+    if (window.drawConnectors) drawConnectors(ctx, drawLm, HAND_CONNECTIONS, { color: "#f2a72e", lineWidth: 4 });
+    if (window.drawLandmarks) drawLandmarks(ctx, drawLm, { color: "#2f9e94", lineWidth: 2, radius: 4 });
+  });
+} else {
+  smoothedLandmarks = [];
+}
   ctx.restore();
 
   const feat = landmarksToFeatures(results);
