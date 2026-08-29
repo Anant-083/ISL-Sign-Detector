@@ -18,6 +18,7 @@
     <div class="panel">
       <div class="cam-box" id="camBox">
         <video id="video" autoplay playsinline muted></video>
+        <canvas id="overlay"></canvas>
         <div class="badge"><span class="dot" id="liveDot"></span><span id="badgeText">camera off</span></div>
       </div>
       <div class="controls">
@@ -40,6 +41,7 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
 <script src="https://cdn.jsdelivr.net/npm/@mediapipe/holistic/holistic.js" crossorigin="anonymous"></script>
 <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web/dist/ort.min.js"></script>
 <script src="js/word_labels.js"></script>
