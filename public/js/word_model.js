@@ -17,10 +17,16 @@ async function predictWord(frameBuffer) {
   }
   const tensor = new ort.Tensor('float32', data, [2, 120, 27]);
   const results = await ortSession.run({ frames: tensor });
-  const logits = results.logits.data;
+  const logits = Array.from(results.logits.data);
+
+  const maxLogit = Math.max(...logits);
+  const exps = logits.map(l => Math.exp(l - maxLogit));
+  const sumExp = exps.reduce((a, b) => a + b, 0);
+  const probs = exps.map(e => e / sumExp);
+
   let maxIdx = 0, maxVal = -Infinity;
-  for (let i = 0; i < logits.length; i++) {
-    if (logits[i] > maxVal) { maxVal = logits[i]; maxIdx = i; }
+  for (let i = 0; i < probs.length; i++) {
+    if (probs[i] > maxVal) { maxVal = probs[i]; maxIdx = i; }
   }
   return { word: WORD_LABELS[maxIdx], confidence: maxVal };
 }
