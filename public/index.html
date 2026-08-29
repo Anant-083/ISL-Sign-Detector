@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ISL Word Recognizer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="wrap">
+  <p class="eyebrow">isl@007 &middot; live inference</p>
+  <h1>ISL Word Recognizer</h1>
+  <p class="sub">Recognizes 263 whole-word Indian Sign Language signs using a fine-tuned Transformer over MediaPipe Holistic pose landmarks. Runs entirely in the browser.</p>
+
+  <div class="stage">
+    <div class="panel">
+      <div class="cam-box" id="camBox">
+        <video id="video" autoplay playsinline muted></video>
+        <div class="badge"><span class="dot" id="liveDot"></span><span id="badgeText">camera off</span></div>
+      </div>
+      <div class="controls">
+        <button id="startBtn">Start camera</button>
+        <button id="stopBtn" class="secondary" disabled>Stop</button>
+      </div>
+      <div class="status" id="statusText">Click "Start camera" and allow access. Perform a full sign, holding position briefly.</div>
+    </div>
+
+    <div class="panel letter-card">
+      <div class="letter-label">predicted word</div>
+      <div class="letter-big" id="wordOutput">&mdash;</div>
+      <div class="conf" id="wordConf">confidence &mdash;</div>
+    </div>
+  </div>
+
+  <div class="foot-note">
+    <b>Model</b> &mdash; OpenHands INCLUDE-pretrained BERT, fine-tuned. 263 word classes, MediaPipe Holistic 27-point landmarks, 120-frame window.
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/holistic/holistic.js" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/onnxruntime-web/dist/ort.min.js"></script>
+<script src="js/word_labels.js"></script>
+<script src="js/word_model.js"></script>
+<script src="js/word_holistic.js"></script>
+<script src="js/word_app.js"></script>
+</body>
+</html>
