@@ -1,7 +1,9 @@
 let ortSession = null;
 
 async function loadWordModel() {
-  ortSession = await ort.InferenceSession.create('models/isl_word_bert.onnx');
+  ortSession = await ort.InferenceSession.create('models/isl_word_bert.onnx', {
+    executionProviders: ['wasm'],
+  });
   console.log('Word model loaded');
 }
 
