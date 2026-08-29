@@ -18,16 +18,20 @@ function extract27Points(results) {
     const lm = results.rightHandLandmarks?.[i];
     points.push(lm ? [lm.x, lm.y] : [0, 0]);
   });
-  return points; // 27 x [x,y], raw (unnormalized)
+  return points;
 }
 
 function pushFrame(results) {
+  const hasHand = !!(results.leftHandLandmarks || results.rightHandLandmarks);
+  if (!hasHand) {
+    frameWindow = [];
+    return;
+  }
   const raw = extract27Points(results);
   frameWindow.push(raw);
-  if (frameWindow.length > SEQ_LEN * 2) frameWindow.shift(); // keep a bit of headroom
+  if (frameWindow.length > SEQ_LEN * 2) frameWindow.shift();
 }
 
-// Uniformly subsample the buffered window to exactly 120 frames
 function uniformSample(frames) {
   const out = [];
   for (let i = 0; i < SEQ_LEN; i++) {
@@ -37,11 +41,8 @@ function uniformSample(frames) {
   return out;
 }
 
-// Clip-level center+scale, matching OpenHands' CenterAndScaleNormalize exactly:
-// center = mean over all frames of midpoint(leftShoulder, rightShoulder)
-// scale = 1 / mean over all frames of distance(leftShoulder, rightShoulder)
 function centerAndScaleClip(frames) {
-  const LS = 3, RS = 4; // indices within our 27-point layout
+  const LS = 3, RS = 4;
   let sumCx = 0, sumCy = 0, sumDist = 0;
   frames.forEach(f => {
     const [lx, ly] = f[LS];
@@ -54,12 +55,11 @@ function centerAndScaleClip(frames) {
   const cx = sumCx / n, cy = sumCy / n;
   const meanDist = sumDist / n;
   const scale = meanDist > 1e-6 ? 1 / meanDist : 1;
-
   return frames.map(f => f.map(([x, y]) => [(x - cx) * scale, (y - cy) * scale]));
 }
 
 function getNormalizedSample() {
-  if (frameWindow.length === 0) return null;
+  if (frameWindow.length < SEQ_LEN) return null;
   const sampled = uniformSample(frameWindow);
   return centerAndScaleClip(sampled);
 }
