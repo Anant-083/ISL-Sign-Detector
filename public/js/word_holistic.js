@@ -3,6 +3,8 @@ const HAND_INDICES = [0, 4, 5, 8, 9, 12, 13, 16, 17, 20];
 const SEQ_LEN = 120;
 
 let frameWindow = [];
+let missedFrameStreak = 0;
+const MAX_MISSED_STREAK = 15; // ~0.5s at 30fps — only reset on a real, sustained dropout
 
 function extract27Points(results) {
   const points = [];
@@ -23,10 +25,22 @@ function extract27Points(results) {
 
 function pushFrame(results) {
   const hasHand = !!(results.leftHandLandmarks || results.rightHandLandmarks);
+
   if (!hasHand) {
-    frameWindow = [];
+    missedFrameStreak++;
+    if (missedFrameStreak > MAX_MISSED_STREAK) {
+      frameWindow = [];
+      missedFrameStreak = 0;
+      return;
+    }
+    // Brief dropout: pad with the last known frame instead of wiping everything
+    if (frameWindow.length > 0) {
+      frameWindow.push(frameWindow[frameWindow.length - 1]);
+    }
     return;
   }
+
+  missedFrameStreak = 0;
   const raw = extract27Points(results);
   frameWindow.push(raw);
   if (frameWindow.length > SEQ_LEN * 2) frameWindow.shift();
