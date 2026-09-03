@@ -5,6 +5,8 @@ async function loadWordModel() {
     executionProviders: ['wasm'],
   });
   console.log('Word model loaded');
+  console.log('Model inputs:', ortSession.inputNames);
+  console.log('Model outputs:', ortSession.outputNames);
 }
 
 async function predictWord(frameBuffer) {
@@ -15,9 +17,9 @@ async function predictWord(frameBuffer) {
       data[120 * 27 + t * 27 + p] = frameBuffer[t][p][1];
     }
   }
-  const tensor = new ort.Tensor('float32', data, [2, 120, 27]);
-  const results = await ortSession.run({ frames: tensor });
-  const logits = Array.from(results.logits.data);
+  const tensor = new ort.Tensor('float32', data, [1, 2, 120, 27]);
+  const results = await ortSession.run({ input: tensor });
+  const logits = Array.from(results.output.data);
 
   const maxLogit = Math.max(...logits);
   const exps = logits.map(l => Math.exp(l - maxLogit));
