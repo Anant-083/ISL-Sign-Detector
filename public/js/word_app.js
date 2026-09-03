@@ -50,7 +50,7 @@ async function startCamera() {
   holistic = new Holistic({
     locateFile: (f) => `https://cdn.jsdelivr.net/npm/@mediapipe/holistic/${f}`
   });
-  holistic.setOptions({ modelComplexity: 1, smoothLandmarks: true, refineFaceLandmarks: false });
+  holistic.setOptions({ modelComplexity: 0, smoothLandmarks: true, refineFaceLandmarks: false });
   holistic.onResults(onResults);
 
   camera = new Camera(videoEl, {
