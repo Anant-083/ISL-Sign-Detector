@@ -64,9 +64,9 @@ async function startCamera() {
 
     liveDot.classList.add("live");
     badgeText.textContent = "live";
-    statusText.textContent = "Camera running. Perform a sign.";
+    statusText.textContent = "Camera running. Perform a sign, then drop your hands to predict.";
     stopBtn.disabled = false;
-    loopHandle = setInterval(predictLoop, 700);
+    loopHandle = setInterval(predictLoop, 200);
   } catch (err) {
     statusText.textContent = "ERROR: " + (err && err.message ? err.message : String(err));
     console.error("startCamera failed:", err);
@@ -76,23 +76,33 @@ async function startCamera() {
 
 async function predictLoop() {
   if (predicting) return;
-  const sample = getNormalizedSample();
-  if (!sample) {
+
+  if (frameWindow.length < MIN_FRAMES) {
     wordOutput.textContent = "—";
-    wordConf.textContent = "show your hands";
+    wordConf.textContent = `show your hands (${frameWindow.length}/${MIN_FRAMES})`;
     return;
   }
+
+  if (!consumeSignComplete()) {
+    wordOutput.textContent = "—";
+    wordConf.textContent = `recording sign... (${frameWindow.length} frames)`;
+    return;
+  }
+
   predicting = true;
   try {
+    const sample = getNormalizedSample();
     const { word, confidence } = await predictWord(sample);
     wordOutput.textContent = word;
     wordConf.textContent = `confidence ${(confidence * 100).toFixed(1)}%`;
+    statusText.textContent = `Predicted "${word}". Perform another sign, then drop your hands.`;
   } catch (err) {
     wordOutput.textContent = "ERROR";
     wordConf.textContent = String(err && err.message ? err.message : err);
     console.error("predictWord failed:", err);
   }
   predicting = false;
+  resetBuffer();
 }
 
 function stopCamera() {
@@ -102,7 +112,7 @@ function stopCamera() {
   videoEl.srcObject = null;
   ctx.clearRect(0, 0, canvasEl.width, canvasEl.height);
   clearInterval(loopHandle);
-  frameWindow = [];
+  resetBuffer();
   liveDot.classList.remove("live");
   badgeText.textContent = "camera off";
   wordOutput.textContent = "—";
@@ -115,3 +125,4 @@ function stopCamera() {
 startBtn.addEventListener("click", startCamera);
 stopBtn.addEventListener("click", stopCamera);
 window.addEventListener("resize", resizeCanvas);
+
