@@ -1,8 +1,8 @@
 const POSE_INDICES = [0, 2, 5, 11, 12, 13, 14];
 const HAND_INDICES = [0, 4, 5, 8, 9, 12, 13, 16, 17, 20];
 const SEQ_LEN = 120;
-const MIN_FRAMES = 20;
-const NO_HAND_CONFIRM = 5; // consecutive no-hand frames before we treat the sign as finished
+const MIN_FRAMES = 8;
+const NO_HAND_CONFIRM = 3;
 
 let frameWindow = [];
 let missedFrameStreak = 0;
@@ -37,15 +37,13 @@ function pushFrame(results) {
     return;
   }
 
-  // No hand detected this frame
   missedFrameStreak++;
 
   if (missedFrameStreak >= NO_HAND_CONFIRM && frameWindow.length >= MIN_FRAMES && !signComplete) {
     signComplete = true;
   }
 
-  // Wipe the buffer only after a long, sustained absence
-  if (missedFrameStreak > 30) {
+  if (missedFrameStreak > 20) {
     frameWindow = [];
     signComplete = false;
   }
@@ -94,4 +92,3 @@ function resetBuffer() {
   signComplete = false;
   missedFrameStreak = 0;
 }
-
