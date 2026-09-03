@@ -44,26 +44,34 @@ function onResults(results) {
 
 async function startCamera() {
   startBtn.disabled = true;
-  statusText.textContent = "Loading word model...";
-  await loadWordModel();
+  try {
+    statusText.textContent = "Loading word model...";
+    await loadWordModel();
 
-  holistic = new Holistic({
-    locateFile: (f) => `https://cdn.jsdelivr.net/npm/@mediapipe/holistic/${f}`
-  });
-  holistic.setOptions({ modelComplexity: 0, smoothLandmarks: true, refineFaceLandmarks: false });
-  holistic.onResults(onResults);
+    statusText.textContent = "Word model loaded. Starting MediaPipe...";
+    holistic = new Holistic({
+      locateFile: (f) => `https://cdn.jsdelivr.net/npm/@mediapipe/holistic/${f}`
+    });
+    holistic.setOptions({ modelComplexity: 0, smoothLandmarks: true, refineFaceLandmarks: false });
+    holistic.onResults(onResults);
 
-  camera = new Camera(videoEl, {
-    onFrame: async () => { await holistic.send({ image: videoEl }); },
-    width: 640, height: 480,
-  });
-  await camera.start();
+    statusText.textContent = "Requesting camera...";
+    camera = new Camera(videoEl, {
+      onFrame: async () => { await holistic.send({ image: videoEl }); },
+      width: 640, height: 480,
+    });
+    await camera.start();
 
-  liveDot.classList.add("live");
-  badgeText.textContent = "live";
-  statusText.textContent = "Camera running. Perform a sign.";
-  stopBtn.disabled = false;
-  loopHandle = setInterval(predictLoop, 700);
+    liveDot.classList.add("live");
+    badgeText.textContent = "live";
+    statusText.textContent = "Camera running. Perform a sign.";
+    stopBtn.disabled = false;
+    loopHandle = setInterval(predictLoop, 700);
+  } catch (err) {
+    statusText.textContent = "ERROR: " + (err && err.message ? err.message : String(err));
+    console.error("startCamera failed:", err);
+    startBtn.disabled = false;
+  }
 }
 
 async function predictLoop() {
@@ -75,9 +83,15 @@ async function predictLoop() {
     return;
   }
   predicting = true;
-  const { word, confidence } = await predictWord(sample);
-  wordOutput.textContent = word;
-  wordConf.textContent = `confidence ${(confidence * 100).toFixed(1)}%`;
+  try {
+    const { word, confidence } = await predictWord(sample);
+    wordOutput.textContent = word;
+    wordConf.textContent = `confidence ${(confidence * 100).toFixed(1)}%`;
+  } catch (err) {
+    wordOutput.textContent = "ERROR";
+    wordConf.textContent = String(err && err.message ? err.message : err);
+    console.error("predictWord failed:", err);
+  }
   predicting = false;
 }
 
