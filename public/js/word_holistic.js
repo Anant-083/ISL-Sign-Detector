@@ -1,10 +1,12 @@
 const POSE_INDICES = [0, 2, 5, 11, 12, 13, 14];
 const HAND_INDICES = [0, 4, 5, 8, 9, 12, 13, 16, 17, 20];
 const SEQ_LEN = 120;
+const MIN_FRAMES = 20;
+const NO_HAND_CONFIRM = 5; // consecutive no-hand frames before we treat the sign as finished
 
 let frameWindow = [];
 let missedFrameStreak = 0;
-const MAX_MISSED_STREAK = 15; // ~0.5s at 30fps — only reset on a real, sustained dropout
+let signComplete = false;
 
 function extract27Points(results) {
   const points = [];
@@ -26,24 +28,27 @@ function extract27Points(results) {
 function pushFrame(results) {
   const hasHand = !!(results.leftHandLandmarks || results.rightHandLandmarks);
 
-  if (!hasHand) {
-    missedFrameStreak++;
-    if (missedFrameStreak > MAX_MISSED_STREAK) {
-      frameWindow = [];
-      missedFrameStreak = 0;
-      return;
-    }
-    // Brief dropout: pad with the last known frame instead of wiping everything
-    if (frameWindow.length > 0) {
-      frameWindow.push(frameWindow[frameWindow.length - 1]);
-    }
+  if (hasHand) {
+    missedFrameStreak = 0;
+    signComplete = false;
+    const raw = extract27Points(results);
+    frameWindow.push(raw);
+    if (frameWindow.length > SEQ_LEN * 2) frameWindow.shift();
     return;
   }
 
-  missedFrameStreak = 0;
-  const raw = extract27Points(results);
-  frameWindow.push(raw);
-  if (frameWindow.length > SEQ_LEN * 2) frameWindow.shift();
+  // No hand detected this frame
+  missedFrameStreak++;
+
+  if (missedFrameStreak >= NO_HAND_CONFIRM && frameWindow.length >= MIN_FRAMES && !signComplete) {
+    signComplete = true;
+  }
+
+  // Wipe the buffer only after a long, sustained absence
+  if (missedFrameStreak > 30) {
+    frameWindow = [];
+    signComplete = false;
+  }
 }
 
 function uniformSample(frames) {
@@ -73,7 +78,20 @@ function centerAndScaleClip(frames) {
 }
 
 function getNormalizedSample() {
-  if (frameWindow.length < SEQ_LEN) return null;
+  if (frameWindow.length < MIN_FRAMES) return null;
   const sampled = uniformSample(frameWindow);
   return centerAndScaleClip(sampled);
 }
+
+function consumeSignComplete() {
+  if (!signComplete) return false;
+  signComplete = false;
+  return true;
+}
+
+function resetBuffer() {
+  frameWindow = [];
+  signComplete = false;
+  missedFrameStreak = 0;
+}
+
