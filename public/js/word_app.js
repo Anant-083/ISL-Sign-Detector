@@ -66,7 +66,7 @@ async function startCamera() {
     badgeText.textContent = "live";
     statusText.textContent = "Camera running. Perform a sign, then drop your hands to predict.";
     stopBtn.disabled = false;
-    loopHandle = setInterval(predictLoop, 200);
+    loopHandle = setInterval(predictLoop, 100);
   } catch (err) {
     statusText.textContent = "ERROR: " + (err && err.message ? err.message : String(err));
     console.error("startCamera failed:", err);
