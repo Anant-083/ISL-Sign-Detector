@@ -12,7 +12,7 @@
 <div class="wrap">
   <p class="eyebrow">isl@007 &middot; live inference</p>
   <h1>ISL Word Recognizer</h1>
-  <p class="sub">Recognizes 263 whole-word Indian Sign Language signs using a fine-tuned Transformer over MediaPipe Holistic pose landmarks. Runs entirely in the browser.</p>
+  <p class="sub">Recognizes 263 whole-word Indian Sign Language signs using a fine-tuned Transformer over MediaPipe pose/hand landmarks. Runs entirely in the browser.</p>
 
   <div class="stage">
     <div class="panel">
@@ -32,17 +32,19 @@
       <div class="letter-label">predicted word</div>
       <div class="letter-big" id="wordOutput">&mdash;</div>
       <div class="conf" id="wordConf">confidence &mdash;</div>
+      <div id="debugGuesses" style="font-size:12px; opacity:0.7; margin-top:8px;"></div>
     </div>
   </div>
 
   <div class="foot-note">
-    <b>Model</b> &mdash; OpenHands INCLUDE-pretrained BERT, fine-tuned. 263 word classes, MediaPipe Holistic 27-point landmarks, 120-frame window.
+    <b>Model</b> &mdash; OpenHands INCLUDE-pretrained BERT, fine-tuned. 263 word classes, 27-point pose/hand landmarks, 120-frame window.
   </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
 <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
-<script src="https://cdn.jsdelivr.net/npm/@mediapipe/holistic/holistic.js" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose/pose.js" crossorigin="anonymous"></script>
 <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web/dist/ort.min.js"></script>
 <script src="js/word_labels.js"></script>
 <script src="js/word_model.js"></script>
