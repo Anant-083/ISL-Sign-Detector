@@ -58,7 +58,6 @@ function onResults(results) {
     drawLandmarks(ctx, results.rightHandLandmarks, { color: "#2f9e94", lineWidth: 1, radius: 3 });
   }
 
-  // Bounding box + label around detected hand(s)
   const allPoints = [];
   if (results.leftHandLandmarks) allPoints.push(...results.leftHandLandmarks);
   if (results.rightHandLandmarks) allPoints.push(...results.rightHandLandmarks);
@@ -162,6 +161,10 @@ async function predictLoop() {
       wordOutput.textContent = word;
       wordConf.textContent = `FINAL — confidence ${(confidence * 100).toFixed(1)}%`;
       statusText.textContent = `Locked in: "${word}"`;
+
+      resetFrameWindow();   // clear buffered frames so the next sign starts clean
+      stableWord = null;
+      stableCount = 0;
     } else {
       wordOutput.textContent = word + " ...";
       wordConf.textContent = `guessing — ${(confidence * 100).toFixed(1)}%`;
@@ -181,7 +184,7 @@ function stopCamera() {
   videoEl.srcObject = null;
   ctx.clearRect(0, 0, canvasEl.width, canvasEl.height);
   clearInterval(loopHandle);
-  frameWindow = [];
+  resetFrameWindow();
   latestHands = null;
   latestPose = null;
   stableWord = null;
