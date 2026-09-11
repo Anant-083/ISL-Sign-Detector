@@ -2,10 +2,15 @@ let ortSession = null;
 
 ort.env.wasm.numThreads = navigator.hardwareConcurrency || 4;
 ort.env.wasm.simd = true;
-
 async function loadWordModel() {
   ortSession = await ort.InferenceSession.create('models/sign_model.onnx', {
     executionProviders: ['wasm'],
+    externalData: [
+      {
+        path: 'sign_model.onnx.data',
+        data: 'models/sign_model.onnx.data',
+      },
+    ],
   });
   console.log('Word model loaded. Input names:', ortSession.inputNames, 'Output names:', ortSession.outputNames);
 }
