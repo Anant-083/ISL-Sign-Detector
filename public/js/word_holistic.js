@@ -71,7 +71,13 @@ function pushFrame(results) {
 function getNormalizedSample() {
   if (frameWindow.length < 15) return null;
   const length = Math.min(frameWindow.length, SEQ_LEN);
+  const recent = frameWindow.slice(-length); // take the most RECENT frames, not the oldest
   const padded = new Array(SEQ_LEN).fill(null).map(() => new Array(75).fill([0, 0, 0]));
-  for (let t = 0; t < length; t++) padded[t] = frameWindow[t];
+  for (let t = 0; t < length; t++) padded[t] = recent[t];
   return { frames: padded, length };
+}
+
+function resetFrameWindow() {
+  frameWindow = [];
+  missedFrameStreak = 0;
 }
